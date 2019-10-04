@@ -2942,6 +2942,16 @@ namespace netDxf.IO
 
             this.chunk.Write(73, (short) mText.LineSpacingStyle);
 
+            if (mText.BackgroudFill != MTextBackgroudFill.None || mText.TextBorder)
+            {
+                this.chunk.Write(90, mText.BackgroudFill + (mText.TextBorder ? 16 : 0));
+
+                this.chunk.Write(45, mText.BackgroudFillBoxScale);
+
+                if (mText.BackgroudFill == MTextBackgroudFill.CustomColor)
+                    this.chunk.Write(63, mText.BackgroudFillColor.Index);
+            }
+
             this.chunk.Write(7, this.EncodeNonAsciiCharacters(mText.Style.Name));
 
             this.WriteXData(mText.XData);

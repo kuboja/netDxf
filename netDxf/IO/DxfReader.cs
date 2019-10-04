@@ -8150,6 +8150,9 @@ namespace netDxf.IO
             TextStyle style = TextStyle.Default;
             string textString = string.Empty;
             List<XData> xData = new List<XData>();
+            MTextBackgroudFill backgroundFill = MTextBackgroudFill.None;
+            bool textBorder = false;
+            double backgroundFillBoxScale = 1.5;
 
             this.chunk.Next();
             while (this.chunk.Code != 0)
@@ -8242,6 +8245,24 @@ namespace netDxf.IO
                         normal.Z = this.chunk.ReadDouble();
                         this.chunk.Next();
                         break;
+                    case 90:
+                        short p90 = this.chunk.ReadShort();
+                        if (p90 > 16)
+                        {
+                            backgroundFill = (MTextBackgroudFill)(p90 - 16);
+                            textBorder = true;
+                        }
+                        else
+                        {
+                            backgroundFill = (MTextBackgroudFill)p90;
+                            textBorder = false;
+                        }
+                        this.chunk.Next();
+                        break;
+                    case 45:
+                        backgroundFillBoxScale = this.chunk.ReadDouble();
+                        this.chunk.Next();
+                        break;
                     case 1001:
                         string appId = this.DecodeEncodedNonAsciiCharacters(this.chunk.ReadString());
                         XData data = this.ReadXDataRecord(this.GetApplicationRegistry(appId));
@@ -8287,8 +8308,11 @@ namespace netDxf.IO
                 AttachmentPoint = attachmentPoint,
                 LineSpacingStyle = spacingStyle,
                 DrawingDirection = drawingDirection,
-                Rotation = isRotationDefined ? rotation : Vector2.Angle(new Vector2(ocsDirection.X, ocsDirection.Y))*MathHelper.RadToDeg,
+                Rotation = isRotationDefined ? rotation : Vector2.Angle(new Vector2(ocsDirection.X, ocsDirection.Y)) * MathHelper.RadToDeg,
                 Normal = normal,
+                BackgroudFill = backgroundFill,
+                BackgroudFillBoxScale = backgroundFillBoxScale,
+                TextBorder = textBorder,
             };
 
             entity.XData.AddRange(xData);

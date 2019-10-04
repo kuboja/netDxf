@@ -117,6 +117,10 @@ namespace netDxf.Entities
         private MTextLineSpacingStyle lineSpacingStyle;
         private MTextDrawingDirection drawingDirection;
         private MTextAttachmentPoint attachmentPoint;
+        private MTextBackgroudFill backgroudFill;
+        private AciColor backgroundFillColor;
+        private double backgroundFillBoxScale;
+        private bool textBorder;
         private TextStyle style;
         private string text;
 
@@ -291,6 +295,8 @@ namespace netDxf.Entities
             this.lineSpacingStyle = MTextLineSpacingStyle.AtLeast;
             this.drawingDirection = MTextDrawingDirection.ByStyle;
             this.rotation = 0.0;
+            this.backgroudFill = MTextBackgroudFill.None;
+            this.backgroundFillBoxScale = 1.0;
         }
 
         #endregion
@@ -431,6 +437,46 @@ namespace netDxf.Entities
         {
             get { return this.text; }
             set { this.text = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the background fill setting.
+        /// </summary>
+        public  MTextBackgroudFill BackgroudFill
+        {
+            get { return this.backgroudFill; }
+            set { this.backgroudFill = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the background fill color.
+        /// </summary>
+        public AciColor BackgroudFillColor
+        {
+            get { return this.backgroundFillColor; }
+            set { this.backgroundFillColor = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the background fill box scale. Determines how much border there is around the text.
+        /// </summary>
+        public double BackgroudFillBoxScale
+        {
+            get { return this.backgroundFillBoxScale; }
+            set {
+                if (value < 1 || value > 5.0)
+                    throw new ArgumentOutOfRangeException(nameof(value), value, "The MText BackgroudFillBoxScale valid values range from 0.25 to 5.0");
+                this.backgroundFillBoxScale = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the background fill box scale. Determines how much border there is around the text.
+        /// </summary>
+        public bool TextBorder
+        {
+            get { return this.textBorder; }
+            set { this.textBorder = value; }
         }
 
         #endregion
@@ -918,6 +964,10 @@ namespace netDxf.Entities
                 LineSpacingStyle = this.lineSpacingStyle,
                 RectangleWidth = this.rectangleWidth,
                 AttachmentPoint = this.attachmentPoint,
+                BackgroudFill = this.backgroudFill,
+                BackgroudFillColor = this.BackgroudFillColor,
+                BackgroudFillBoxScale = this.backgroundFillBoxScale,
+                TextBorder = this.textBorder,
                 Style = (TextStyle) this.style.Clone(),
                 Value = this.text
             };
