@@ -481,5 +481,10 @@ namespace netDxf
         /// Layouts.
         /// </summary>
         public const string Layout = "LAYOUT";
+
+        /// <summary>
+        /// Ole2Frame.
+        /// </summary>
+        public const string Ole2Frame = "OLE2FRAME";
     }
 }

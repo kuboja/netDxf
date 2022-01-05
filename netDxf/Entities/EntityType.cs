@@ -165,6 +165,11 @@ namespace netDxf.Entities
         /// <summary>
         /// XLine entity.
         /// </summary>
-        XLine
+        XLine,
+
+        /// <summary>
+        /// Ole2Frame entity.
+        /// </summary>
+        Ole2Frame,
     }
 }

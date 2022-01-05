@@ -3501,6 +3501,9 @@ namespace netDxf.IO
                 case DxfObjectCode.AcadTable:
                     dxfObject = this.ReadAcadTable(isBlockEntity);
                     break;
+                case DxfObjectCode.Ole2Frame:
+                    dxfObject = this.ReadOle2Frame();
+                    break;
                 default:
                     this.ReadUnknowEntity();
                     return null;
@@ -8903,6 +8906,25 @@ namespace netDxf.IO
             {
                 this.chunk.Next();
             }
+        }
+
+        private Ole2Frame ReadOle2Frame()
+        {
+            var bytes = new List<KeyValuePair<short, object>>();
+
+            // if the entity is unknown keep reading until an end of section or a new entity is found
+            bytes.Add(KeyValuePair.Create(chunk.Code, chunk.Value));
+            this.chunk.Next();
+            while (this.chunk.Code != 0)
+            {
+                bytes.Add(KeyValuePair.Create(chunk.Code, chunk.Value));
+                this.chunk.Next();
+            }
+
+            return new Ole2Frame()
+            {
+                Values = bytes
+            };
         }
 
         #endregion

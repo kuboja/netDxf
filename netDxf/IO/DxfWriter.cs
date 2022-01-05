@@ -1894,6 +1894,9 @@ namespace netDxf.IO
                 case EntityType.XLine:
                     this.WriteXLine((XLine) entity);
                     break;
+                case EntityType.Ole2Frame:
+                    this.WriteOle2Frame((Ole2Frame) entity);
+                    break;
                 default:
                     throw new ArgumentException("Entity unknown.", nameof(entity));
             }
@@ -4543,6 +4546,14 @@ namespace netDxf.IO
             this.chunk.Write(132, vp.UcsYAxis.Z);
 
             this.WriteXData(vp.XData);
+        }
+
+        private void WriteOle2Frame(Ole2Frame ole)
+        {
+            foreach (var item in ole.Values)
+            {
+                this.chunk.Write(item.Key, item.Value);
+            }
         }
 
         #endregion
