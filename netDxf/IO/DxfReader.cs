@@ -9731,20 +9731,18 @@ namespace netDxf.IO
 
         private Ole2Frame ReadOle2Frame()
         {
-            var bytes = new List<KeyValuePair<short, object>>();
+            var values = new List<KeyValuePair<short, object>>();
 
-            // if the entity is unknown keep reading until an end of section or a new entity is found
-            bytes.Add(KeyValuePair.Create(chunk.Code, chunk.Value));
-            this.chunk.Next();
-            while (this.chunk.Code != 0)
+            // read all values from ole entity
+            do
             {
-                bytes.Add(KeyValuePair.Create(chunk.Code, chunk.Value));
+                values.Add(new KeyValuePair<short, object>(chunk.Code, chunk.Value));
                 this.chunk.Next();
-            }
+            } while (this.chunk.Code != 0);
 
             return new Ole2Frame()
             {
-                Values = bytes
+                Values = values,
             };
         }
 
