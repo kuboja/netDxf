@@ -1,23 +1,26 @@
-﻿#region netDxf library, Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
-
-//                        netDxf library
-// Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
+#region netDxf library licensed under the MIT License
 // 
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 2.1 of the License, or (at your option) any later version.
+//                       netDxf library
+// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
 // 
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
 // 
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+// 
 #endregion
 
 using System;
@@ -36,9 +39,7 @@ namespace netDxf.Entities
         #region delegates and events
 
         public delegate void HatchBoundaryPathAddedEventHandler(Hatch sender, ObservableCollectionEventArgs<HatchBoundaryPath> e);
-
         public event HatchBoundaryPathAddedEventHandler HatchBoundaryPathAdded;
-
         protected virtual void OnHatchBoundaryPathAddedEvent(HatchBoundaryPath item)
         {
             HatchBoundaryPathAddedEventHandler ae = this.HatchBoundaryPathAdded;
@@ -49,9 +50,7 @@ namespace netDxf.Entities
         }
 
         public delegate void HatchBoundaryPathRemovedEventHandler(Hatch sender, ObservableCollectionEventArgs<HatchBoundaryPath> e);
-
         public event HatchBoundaryPathRemovedEventHandler HatchBoundaryPathRemoved;
-
         protected virtual void OnHatchBoundaryPathRemovedEvent(HatchBoundaryPath item)
         {
             HatchBoundaryPathRemovedEventHandler ae = this.HatchBoundaryPathRemoved;
@@ -89,11 +88,7 @@ namespace netDxf.Entities
         public Hatch(HatchPattern pattern, bool associative)
             : base(EntityType.Hatch, DxfObjectCode.Hatch)
         {
-            if (pattern == null)
-            {
-                throw new ArgumentNullException(nameof(pattern));
-            }
-            this.pattern = pattern;
+            this.pattern = pattern ?? throw new ArgumentNullException(nameof(pattern));
             this.boundaryPaths = new ObservableCollection<HatchBoundaryPath>();
             this.boundaryPaths.BeforeAddItem += this.BoundaryPaths_BeforeAddItem;
             this.boundaryPaths.AddItem += this.BoundaryPaths_AddItem;
@@ -116,11 +111,7 @@ namespace netDxf.Entities
         public Hatch(HatchPattern pattern, IEnumerable<HatchBoundaryPath> paths, bool associative)
             : base(EntityType.Hatch, DxfObjectCode.Hatch)
         {
-            if (pattern == null)
-            {
-                throw new ArgumentNullException(nameof(pattern));
-            }
-            this.pattern = pattern;
+            this.pattern = pattern ?? throw new ArgumentNullException(nameof(pattern));
 
             if (paths == null)
             {
@@ -155,11 +146,7 @@ namespace netDxf.Entities
             get { return this.pattern; }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-                this.pattern = value;
+                this.pattern = value ?? throw new ArgumentNullException(nameof(value));
             }
         }
 
@@ -225,7 +212,7 @@ namespace netDxf.Entities
         /// If the actual hatch is already associative, the old boundary entities will be unlinked, but not deleted from the hatch document.
         /// If linkBoundary is true, the new boundary entities will be added to the same layout and document as the hatch, in case it belongs to one,
         /// so, in this case, if you also try to add the return list to the document it will cause an error.<br/>
-        /// All entities are in world coordinates except the LwPolyline boundary path since by definition its vertexes are expressed in object coordinates.
+        /// All entities are in world coordinates except the Polyline2D boundary path since by definition its vertexes are expressed in object coordinates.
         /// </remarks>
         public List<EntityObject> CreateBoundary(bool linkBoundary)
         {
@@ -257,9 +244,9 @@ namespace netDxf.Entities
                         case EntityType.Line:
                             boundary.Add(ProcessLine((Line) entity, trans, pos));
                             break;
-                        case EntityType.LwPolyline:
+                        case EntityType.Polyline2D:
                             // LwPolylines need an special treatment since their vertexes are expressed in object coordinates.
-                            boundary.Add(ProcessLwPolyline((LwPolyline) entity, this.Normal, this.elevation));
+                            boundary.Add(ProcessLwPolyline((Polyline2D) entity, this.Normal, this.elevation));
                             break;
                         case EntityType.Spline:
                             boundary.Add(ProcessSpline((Spline) entity, trans, pos));
@@ -310,11 +297,11 @@ namespace netDxf.Entities
             return line;
         }
 
-        private static LwPolyline ProcessLwPolyline(LwPolyline polyline, Vector3 normal, double elevation)
+        private static Polyline2D ProcessLwPolyline(Polyline2D polyline2D, Vector3 normal, double elevation)
         {
-            polyline.Elevation = elevation;
-            polyline.Normal = normal;
-            return polyline;
+            polyline2D.Elevation = elevation;
+            polyline2D.Normal = normal;
+            return polyline2D;
         }
 
         private static Spline ProcessSpline(Spline spline, Matrix3 trans, Vector3 pos)
@@ -332,84 +319,84 @@ namespace netDxf.Entities
         #region overrides
 
         // TODO: apply the transformation directly to edges
-        public void TransformBy2(Matrix3 transformation, Vector3 translation)
-        {
-            if (this.associative)
-            {
-                this.UnLinkBoundary();
-            }
+        //public void TransformBy2(Matrix3 transformation, Vector3 translation)
+        //{
+        //    if (this.associative)
+        //    {
+        //        this.UnLinkBoundary();
+        //    }
 
-            Vector3 newNormal = transformation * this.Normal;
-            if (Vector3.Equals(Vector3.Zero, newNormal))
-            {
-                newNormal = this.Normal;
-            }
+        //    Vector3 newNormal = transformation * this.Normal;
+        //    if (Vector3.Equals(Vector3.Zero, newNormal))
+        //    {
+        //        newNormal = this.Normal;
+        //    }
 
-            Matrix3 transOW = MathHelper.ArbitraryAxis(this.Normal);
-            Matrix3 transWO = MathHelper.ArbitraryAxis(newNormal).Transpose();
+        //    Matrix3 transOW = MathHelper.ArbitraryAxis(this.Normal);
+        //    Matrix3 transWO = MathHelper.ArbitraryAxis(newNormal).Transpose();
 
-            Vector3 position = transOW * new Vector3(0.0, 0.0, this.Elevation);
+        //    Vector3 position = transOW * new Vector3(0.0, 0.0, this.Elevation);
 
-            foreach (HatchBoundaryPath path in this.BoundaryPaths)
-            {
-                foreach (HatchBoundaryPath.Edge edge in path.Edges)
-                {
-                    switch (edge.Type)
-                    {
-                        case HatchBoundaryPath.EdgeType.Arc:
-                            break;
+        //    foreach (HatchBoundaryPath path in this.BoundaryPaths)
+        //    {
+        //        foreach (HatchBoundaryPath.Edge edge in path.Edges)
+        //        {
+        //            switch (edge.Type)
+        //            {
+        //                case HatchBoundaryPath.EdgeType.Arc:
+        //                    break;
 
-                        case HatchBoundaryPath.EdgeType.Ellipse:
-                            break;
+        //                case HatchBoundaryPath.EdgeType.Ellipse:
+        //                    break;
 
-                        case HatchBoundaryPath.EdgeType.Line:
-                            HatchBoundaryPath.Line line = (HatchBoundaryPath.Line)edge;
-                            Vector3 start = new Vector3(line.Start.X, line.Start.Y, 0.0);
-                            Vector3 end = new Vector3(line.End.X, line.End.Y, 0.0);
+        //                case HatchBoundaryPath.EdgeType.Line:
+        //                    HatchBoundaryPath.Line line = (HatchBoundaryPath.Line)edge;
+        //                    Vector3 start = new Vector3(line.Start.X, line.Start.Y, 0.0);
+        //                    Vector3 end = new Vector3(line.End.X, line.End.Y, 0.0);
 
-                            // to world coordinates
-                            start = transOW * start + position;
-                            end = transOW * end + position;
+        //                    // to world coordinates
+        //                    start = transOW * start + position;
+        //                    end = transOW * end + position;
 
-                            // transformation
-                            start = transformation * start + translation;
-                            end = transformation * end + translation;
+        //                    // transformation
+        //                    start = transformation * start + translation;
+        //                    end = transformation * end + translation;
 
-                            Vector3 point;
-                            point = transWO * start;
-                            line.Start = new Vector2(point.X, point.Y);
-                            point = transWO * end;
-                            line.End = new Vector2(point.X, point.Y);
-                            break;
+        //                    Vector3 point;
+        //                    point = transWO * start;
+        //                    line.Start = new Vector2(point.X, point.Y);
+        //                    point = transWO * end;
+        //                    line.End = new Vector2(point.X, point.Y);
+        //                    break;
 
-                        case HatchBoundaryPath.EdgeType.Polyline:
-                            break;
+        //                case HatchBoundaryPath.EdgeType.Polyline:
+        //                    break;
 
-                        case HatchBoundaryPath.EdgeType.Spline:
-                            break;
-                    }
-                }
-            }
+        //                case HatchBoundaryPath.EdgeType.Spline:
+        //                    break;
+        //            }
+        //        }
+        //    }
 
-            position = transformation * position + translation;
-            position = transWO * position;
+        //    position = transformation * position + translation;
+        //    position = transWO * position;
 
-            Vector2 refAxis = Vector2.Rotate(Vector2.UnitX, this.Pattern.Angle * MathHelper.DegToRad);
-            refAxis = this.Pattern.Scale * refAxis;
-            Vector3 v = transOW * new Vector3(refAxis.X, refAxis.Y, 0.0);
-            v = transformation * v;
-            v = transWO * v;
-            Vector2 axis = new Vector2(v.X, v.Y);
-            double newAngle = Vector2.Angle(axis) * MathHelper.RadToDeg;
+        //    Vector2 refAxis = Vector2.Rotate(Vector2.UnitX, this.Pattern.Angle * MathHelper.DegToRad);
+        //    refAxis = this.Pattern.Scale * refAxis;
+        //    Vector3 v = transOW * new Vector3(refAxis.X, refAxis.Y, 0.0);
+        //    v = transformation * v;
+        //    v = transWO * v;
+        //    Vector2 axis = new Vector2(v.X, v.Y);
+        //    double newAngle = Vector2.Angle(axis) * MathHelper.RadToDeg;
 
-            double newScale = axis.Modulus();
-            newScale = MathHelper.IsZero(newScale) ? MathHelper.Epsilon : newScale;
+        //    double newScale = axis.Modulus();
+        //    newScale = MathHelper.IsZero(newScale) ? MathHelper.Epsilon : newScale;
 
-            this.Pattern.Scale = newScale;
-            this.Pattern.Angle = newAngle;
-            this.Elevation = position.Z;
-            this.Normal = newNormal;
-        }
+        //    this.Pattern.Scale = newScale;
+        //    this.Pattern.Angle = newAngle;
+        //    this.Elevation = position.Z;
+        //    this.Normal = newNormal;
+        //}
 
         /// <summary>
         /// Moves, scales, and/or rotates the current entity given a 3x3 transformation matrix and a translation vector.
@@ -425,7 +412,10 @@ namespace netDxf.Entities
             }
 
             Vector3 newNormal = transformation * this.Normal;
-            if (Vector3.Equals(Vector3.Zero, newNormal)) newNormal = this.Normal;
+            if (Vector3.Equals(Vector3.Zero, newNormal))
+            {
+                newNormal = this.Normal;
+            }
 
             Matrix3 transOW = MathHelper.ArbitraryAxis(this.Normal);
             Matrix3 transWO = MathHelper.ArbitraryAxis(newNormal).Transpose();
@@ -456,8 +446,8 @@ namespace netDxf.Entities
                         case EntityType.Line:
                             entity = ProcessLine((Line) entity, transOW, position);
                             break;
-                        case EntityType.LwPolyline:
-                            entity = ProcessLwPolyline((LwPolyline) entity, this.Normal, this.Elevation);
+                        case EntityType.Polyline2D:
+                            entity = ProcessLwPolyline((Polyline2D) entity, this.Normal, this.Elevation);
                             break;
                         case EntityType.Spline:
                             entity = ProcessSpline((Spline) entity, transOW, position);
@@ -518,10 +508,14 @@ namespace netDxf.Entities
             };
 
             foreach (HatchBoundaryPath path in this.boundaryPaths)
+            {
                 entity.boundaryPaths.Add((HatchBoundaryPath) path.Clone());
+            }
 
             foreach (XData data in this.XData.Values)
+            {
                 entity.XData.Add((XData) data.Clone());
+            }
 
             return entity;
         }
@@ -534,7 +528,9 @@ namespace netDxf.Entities
         {
             // null items are not allowed in the list.
             if (e.Item == null)
+            {
                 e.Cancel = true;
+            }
             e.Cancel = false;
         }
 

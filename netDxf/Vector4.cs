@@ -1,23 +1,26 @@
-#region netDxf library, Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
-
-//                        netDxf library
-// Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
+#region netDxf library licensed under the MIT License
 // 
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 2.1 of the License, or (at your option) any later version.
+//                       netDxf library
+// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
 // 
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
 // 
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+// 
 #endregion
 
 using System;
@@ -45,7 +48,7 @@ namespace netDxf
         #region constructors
 
         /// <summary>
-        /// Initializes a new instance of Vector3.
+        /// Initializes a new instance of Vector4.
         /// </summary>
         /// <param name="x">X component.</param>
         /// <param name="y">Y component.</param>
@@ -67,10 +70,15 @@ namespace netDxf
         public Vector4(double[] array)
         {
             if (array == null)
+            {
                 throw new ArgumentNullException(nameof(array));
+            }
 
             if (array.Length != 4)
+            {
                 throw new ArgumentOutOfRangeException(nameof(array), array.Length, "The dimension of the array must be four.");
+            }
+
             this.x = array[0];
             this.y = array[1];
             this.z = array[2];
@@ -87,7 +95,7 @@ namespace netDxf
         /// </summary>
         public static Vector4 Zero
         {
-            get { return new Vector4(0, 0, 0, 0); }
+            get { return new Vector4(0.0, 0.0, 0.0, 0.0); }
         }
 
         /// <summary>
@@ -95,7 +103,7 @@ namespace netDxf
         /// </summary>
         public static Vector4 UnitX
         {
-            get { return new Vector4(1, 0, 0, 0) {isNormalized = true}; }
+            get { return new Vector4(1.0, 0.0, 0.0, 0.0) {isNormalized = true}; }
         }
 
         /// <summary>
@@ -103,7 +111,7 @@ namespace netDxf
         /// </summary>
         public static Vector4 UnitY
         {
-            get { return new Vector4(0, 1, 0, 0) {isNormalized = true}; }
+            get { return new Vector4(0.0, 1.0, 0.0, 0.0) {isNormalized = true}; }
         }
 
         /// <summary>
@@ -119,7 +127,7 @@ namespace netDxf
         /// </summary>
         public static Vector4 UnitW
         {
-            get { return new Vector4(0, 0, 0, 1) {isNormalized = true}; }
+            get { return new Vector4(0.0, 0.0, 0.0, 1.0) {isNormalized = true}; }
         }
 
         /// <summary>
@@ -246,7 +254,7 @@ namespace netDxf
         /// <summary>
         ///  Returns a value indicating if any component of the specified vector evaluates to a value that is not a number <see cref="System.Double.NaN"/>.
         /// </summary>
-        /// <param name="u">Vector3.</param>
+        /// <param name="u">Vector4.</param>
         /// <returns>Returns true if any component of the specified vector evaluates to <see cref="System.Double.NaN"/>; otherwise, false.</returns>
         public static bool IsNaN(Vector4 u)
         {
@@ -304,15 +312,19 @@ namespace netDxf
         /// <returns>A normalized vector.</returns>
         public static Vector4 Normalize(Vector4 u)
         {
-            if (u.isNormalized) return u;
+            if (u.isNormalized)
+            {
+                return u;
+            }
 
             double mod = u.Modulus();
             if (MathHelper.IsZero(mod))
+            {
                 return NaN;
+            }
+
             double modInv = 1/mod;
-            Vector4 vec = new Vector4(u.X*modInv, u.Y*modInv, u.Z*modInv, u.W*modInv);
-            vec.isNormalized = true;
-            return vec;
+            return new Vector4(u.X * modInv, u.Y * modInv, u.Z * modInv, u.W * modInv) {isNormalized = true};
         }
 
         #endregion
@@ -479,8 +491,8 @@ namespace netDxf
         /// <returns>The division of u times a.</returns>
         public static Vector4 operator /(Vector4 u, double a)
         {
-            double invEscalar = 1/a;
-            return new Vector4(u.X*invEscalar, u.Y*invEscalar, u.Z*invEscalar, u.W*invEscalar);
+            double invScalar = 1/a;
+            return new Vector4(u.X*invScalar, u.Y*invScalar, u.Z*invScalar, u.W*invScalar);
         }
 
         /// <summary>
@@ -491,8 +503,8 @@ namespace netDxf
         /// <returns>The division of u times a.</returns>
         public static Vector4 Divide(Vector4 u, double a)
         {
-            double invEscalar = 1/a;
-            return new Vector4(u.X*invEscalar, u.Y*invEscalar, u.Z*invEscalar, u.W*invEscalar);
+            double invScalar = 1/a;
+            return new Vector4(u.X*invScalar, u.Y*invScalar, u.Z*invScalar, u.W*invScalar);
         }
 
         /// <summary>
@@ -526,11 +538,16 @@ namespace netDxf
         /// </summary>
         public void Normalize()
         {
-            if (this.isNormalized) return;
+            if (this.isNormalized)
+            {
+                return;
+            }
 
             double mod = this.Modulus();
             if (MathHelper.IsZero(mod))
+            {
                 this = NaN;
+            }
             else
             {
                 double modInv = 1/mod;
@@ -548,9 +565,7 @@ namespace netDxf
         /// <returns>Vector modulus.</returns>
         public double Modulus()
         {
-            if (this.isNormalized) return 1.0;
-
-            return Math.Sqrt(DotProduct(this, this));
+            return this.isNormalized ? 1.0 : Math.Sqrt(DotProduct(this, this));
         }
 
         /// <summary>
@@ -620,8 +635,11 @@ namespace netDxf
         /// <returns>True if obj and this instance are the same type and represent the same value; otherwise, false.</returns>
         public override bool Equals(object other)
         {
-            if (other is Vector4)
-                return this.Equals((Vector4) other);
+            if (other is Vector4 vector)
+            {
+                return this.Equals(vector);
+            }
+
             return false;
         }
 

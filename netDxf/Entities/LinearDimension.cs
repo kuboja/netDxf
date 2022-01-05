@@ -1,23 +1,26 @@
-﻿#region netDxf library, Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
-
-//                        netDxf library
-// Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
+#region netDxf library licensed under the MIT License
 // 
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 2.1 of the License, or (at your option) any later version.
+//                       netDxf library
+// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
 // 
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
 // 
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+// 
 #endregion
 
 using System;
@@ -115,9 +118,7 @@ namespace netDxf.Entities
             this.offset = offset;
             this.rotation = MathHelper.NormalizeAngle(rotation);
 
-            if (style == null)
-                throw new ArgumentNullException(nameof(style));
-            this.Style = style;
+            this.Style = style ?? throw new ArgumentNullException(nameof(style));
             this.Normal = normal;
             this.Elevation = ocsPoints[0].Z;
             this.Update();
@@ -154,9 +155,7 @@ namespace netDxf.Entities
                 throw new ArgumentOutOfRangeException(nameof(offset), "The offset value must be equal or greater than zero.");
             this.offset = offset;
             this.rotation = MathHelper.NormalizeAngle(rotation);
-            if (style == null)
-                throw new ArgumentNullException(nameof(style));
-            this.Style = style;
+            this.Style = style ?? throw new ArgumentNullException(nameof(style));
             this.Update();
         }
 
@@ -212,7 +211,9 @@ namespace netDxf.Entities
             set
             {
                 if (value < 0)
+                {
                     throw new ArgumentOutOfRangeException(nameof(value), "The offset value must be equal or greater than zero.");
+                }
                 this.offset = value;
             }
         }
@@ -241,23 +242,16 @@ namespace netDxf.Entities
         public void SetDimensionLinePosition(Vector2 point)
         {
             Vector2 midRef = Vector2.MidPoint(this.firstRefPoint, this.secondRefPoint);
+            double dimRotation = this.Rotation * MathHelper.DegToRad;
 
             Vector2 pointDir = point - this.firstRefPoint;
-
-            double dimRotation = this.rotation * MathHelper.DegToRad;
-            Vector2 dimDir = new Vector2(Math.Cos(dimRotation), Math.Sin(dimRotation));
+            Vector2 dimDir = Vector2.Normalize(Vector2.Rotate(Vector2.UnitX, dimRotation));
             
-            double cross = Vector2.CrossProduct(this.secondRefPoint - this.firstRefPoint, pointDir);
+            double cross = Vector2.CrossProduct(dimDir, pointDir);
             if (cross < 0)
             {
-                MathHelper.Swap(ref this.firstRefPoint, ref this.secondRefPoint);
-            }
-
-            double crossDim = Vector2.CrossProduct(dimDir, pointDir);
-            if (crossDim < 0)
-            {
                 this.Rotation += 180;
-                dimDir *= -1;
+                dimDir *= -1; // rotate the dimension direction 180 degrees
                 dimRotation = this.rotation * MathHelper.DegToRad;
             }
 
@@ -265,8 +259,13 @@ namespace netDxf.Entities
 
             Vector2 offsetDir = Vector2.Perpendicular(dimDir);
             Vector2 midDimLine = midRef + this.offset * offsetDir;
-
             this.defPoint = midDimLine + 0.5 * this.Measurement * dimDir;
+
+            cross = Vector2.CrossProduct(this.secondRefPoint - this.firstRefPoint, offsetDir);
+            if (cross < 0)
+            {
+                MathHelper.Swap(ref this.firstRefPoint, ref this.secondRefPoint);
+            }
 
             if (!this.TextPositionManuallySet)
             {
@@ -303,7 +302,10 @@ namespace netDxf.Entities
         public override void TransformBy(Matrix3 transformation, Vector3 translation)
         {
             Vector3 newNormal = transformation * this.Normal;
-            if (Vector3.Equals(Vector3.Zero, newNormal)) newNormal = this.Normal;
+            if (Vector3.Equals(Vector3.Zero, newNormal))
+            {
+                newNormal = this.Normal;
+            }
 
             Matrix3 transOW = MathHelper.ArbitraryAxis(this.Normal);
             Matrix3 transWO = MathHelper.ArbitraryAxis(newNormal).Transpose();
@@ -353,23 +355,20 @@ namespace netDxf.Entities
         /// <summary>
         /// Calculate the dimension reference points.
         /// </summary>
-        protected override void CalculteReferencePoints()
+        protected override void CalculateReferencePoints()
         {
             DimensionStyleOverride styleOverride;
 
             double measure = this.Measurement;
-            Vector2 ref1 = this.firstRefPoint;
-            Vector2 ref2 = this.secondRefPoint;
-            Vector2 midRef = Vector2.MidPoint(ref1, ref2);
+            Vector2 midRef = Vector2.MidPoint(this.firstRefPoint, this.secondRefPoint);
             double dimRotation = this.Rotation * MathHelper.DegToRad;
 
             Vector2 vec = Vector2.Normalize(Vector2.Rotate(Vector2.UnitY, dimRotation));
             Vector2 midDimLine = midRef + this.offset * vec;
-            double cross = Vector2.CrossProduct(ref2 - ref1, vec);
+            double cross = Vector2.CrossProduct(this.secondRefPoint - this.firstRefPoint, vec);
             if (cross < 0)
             {
-                this.firstRefPoint = ref2;
-                this.secondRefPoint = ref1;
+                MathHelper.Swap(ref this.firstRefPoint, ref this.secondRefPoint);
             }
             this.defPoint = midDimLine - measure * 0.5 * Vector2.Perpendicular(vec);
 
@@ -456,14 +455,14 @@ namespace netDxf.Entities
 
             foreach (DimensionStyleOverride styleOverride in this.StyleOverrides.Values)
             {
-                ICloneable value = styleOverride.Value as ICloneable;
-                object copy = value != null ? value.Clone() : styleOverride.Value;
-
+                object copy = styleOverride.Value is ICloneable value ? value.Clone() : styleOverride.Value;
                 entity.StyleOverrides.Add(new DimensionStyleOverride(styleOverride.Type, copy));
             }
 
             foreach (XData data in this.XData.Values)
+            {
                 entity.XData.Add((XData) data.Clone());
+            }
 
             return entity;
         }

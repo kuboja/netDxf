@@ -1,28 +1,32 @@
-﻿#region netDxf library, Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
-
-//                        netDxf library
-// Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
+#region netDxf library licensed under the MIT License
 // 
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 2.1 of the License, or (at your option) any later version.
+//                       netDxf library
+// Copyright (c) 2019-2021 Daniel Carvajal (haplokuon@gmail.com)
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
 // 
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
 // 
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+// 
 #endregion
 
 using System;
 using netDxf.Blocks;
 using netDxf.Collections;
+using netDxf.Entities;
 using netDxf.Tables;
 
 namespace netDxf.Objects
@@ -47,6 +51,7 @@ namespace netDxf.Objects
         private Vector3 xAxis;
         private Vector3 yAxis;
         private short tabOrder;
+        private Viewport viewport;
         private readonly bool isPaperSpace;
         private Block associatedBlock;
 
@@ -87,18 +92,29 @@ namespace netDxf.Objects
             : base(name, DxfObjectCode.Layout, true)
         {
             if (string.IsNullOrEmpty(name))
+            {
                 throw new ArgumentNullException(nameof(name), "The layout name should be at least one character long.");
+            }
 
             if (name.Equals(ModelSpaceName, StringComparison.OrdinalIgnoreCase))
             {
                 this.IsReserved = true;
                 this.isPaperSpace = false;
+                this.viewport = null;
                 plotSettings.Flags = PlotFlags.Initializing | PlotFlags.UpdatePaper | PlotFlags.ModelType | PlotFlags.DrawViewportsFirst | PlotFlags.PrintLineweights | PlotFlags.PlotPlotStyles | PlotFlags.UseStandardScale;
             }
             else
             {
                 this.IsReserved = false;
                 this.isPaperSpace = true;
+                this.viewport = new Viewport(1)
+                {
+                    ViewCenter = new Vector2(50.0, 100.0),
+                    Status = ViewportStatusFlags.AdaptiveGridDisplay |
+                             ViewportStatusFlags.DisplayGridBeyondDrawingLimits |
+                             ViewportStatusFlags.CurrentlyAlwaysEnabled |
+                             ViewportStatusFlags.UcsIconVisibility
+                };
             }
 
             this.tabOrder = 0;
@@ -133,7 +149,9 @@ namespace netDxf.Objects
             set
             {
                 if (value <= 0)
+                {
                     throw new ArgumentException("The tab order index must be greater than zero.", nameof(value));
+                }
                 this.tabOrder = value;
             }
         }
@@ -237,6 +255,17 @@ namespace netDxf.Objects
         }
 
         /// <summary>
+        /// Gets the viewport associated with this layout. This is the viewport with Id 1 that represents the paper space itself,
+        /// it has no graphical representation, and does not show the model.
+        /// </summary>
+        /// <remarks>The ModelSpace layout does not require a viewport and it will always return null.</remarks>
+        public Viewport Viewport
+        {
+            get { return this.viewport; }
+            internal set { this.viewport = value; }
+        }
+
+        /// <summary>
         /// Gets the owner of the actual layout.
         /// </summary>
         public new Layouts Owner
@@ -263,11 +292,21 @@ namespace netDxf.Objects
         /// </summary>
         /// <param name="newName">Layout name of the copy.</param>
         /// <returns>A new Layout that is a copy of this instance.</returns>
-        /// <remarks>The Model Layout cannot be cloned.</remarks>
+        /// <remarks>
+        /// The Model Layout cannot be cloned.<br />
+        /// When cloning a PaperSpace layout the contents of the layout will not be cloned.
+        /// </remarks>
         public override TableObject Clone(string newName)
         {
-            if (this.Name == ModelSpaceName || newName == ModelSpaceName)
+            if (!this.IsPaperSpace)
+            {
                 throw new NotSupportedException("The Model layout cannot be cloned.");
+            }
+
+            if (string.Equals(newName, ModelSpaceName, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("The layout name \"Model\" is reserved for the ModelSpace.");
+            }
 
             Layout copy = new Layout(newName, null, (PlotSettings) this.plot.Clone())
             {
@@ -281,10 +320,13 @@ namespace netDxf.Objects
                 UcsOrigin = this.origin,
                 UcsXAxis = this.xAxis,
                 UcsYAxis = this.yAxis,
+                Viewport = (Viewport) this.viewport.Clone()
             };
 
             foreach (XData data in this.XData.Values)
+            {
                 copy.XData.Add((XData)data.Clone());
+            }
 
             return copy;
         }
@@ -293,7 +335,10 @@ namespace netDxf.Objects
         /// Creates a new Layout that is a copy of the current instance.
         /// </summary>
         /// <returns>A new Layout that is a copy of this instance.</returns>
-        /// <remarks>The Model Layout cannot be cloned.</remarks>
+        /// <remarks>
+        /// The Model Layout cannot be cloned.<br />
+        /// When cloning a PaperSpace layout the contents of the layout will not be cloned.
+        /// </remarks>
         public override object Clone()
         {
             return this.Clone(this.Name);
@@ -308,10 +353,14 @@ namespace netDxf.Objects
         /// Some objects might consume more than one, is, for example, the case of polylines that will assign
         /// automatically a handle to its vertexes. The entity number will be converted to an hexadecimal number.
         /// </remarks>
-        internal override long AsignHandle(long entityNumber)
+        internal override long AssignHandle(long entityNumber)
         {
-            entityNumber = this.Owner.AsignHandle(entityNumber);
-            return base.AsignHandle(entityNumber);
+            entityNumber = this.Owner.AssignHandle(entityNumber);
+            if (this.isPaperSpace)
+            {
+                entityNumber = this.viewport.AssignHandle(entityNumber);
+            }
+            return base.AssignHandle(entityNumber);
         }
 
         #endregion
@@ -330,7 +379,9 @@ namespace netDxf.Objects
         public int CompareTo(Layout other)
         {
             if (other == null)
+            {
                 throw new ArgumentNullException(nameof(other));
+            }
 
             return this.tabOrder.CompareTo(other.tabOrder);
         }
