@@ -32,6 +32,8 @@ namespace TestDxfDocument
         {
             DxfDocument doc = Test(@"sample.dxf");
 
+            BlockWithPolyline();
+
             #region Samples for new and modified features 3.0.0
 
             //UcsTransform();
@@ -8182,6 +8184,25 @@ namespace TestDxfDocument
             doc.DrawingVariables.InsUnits = DrawingUnits.Meters;
             //doc.Entities.Add(insMM);
             doc.Entities.Add(insCM);
+
+            doc.Save("test.dxf");
+        }
+
+        private static void BlockWithPolyline()
+        {
+            Polyline3D poly = new Polyline3D();
+            poly.Vertexes.Add(new Vector3(0, 0, 0));
+            poly.Vertexes.Add(new Vector3(10, 10, 0));
+            poly.Vertexes.Add(new Vector3(20, 0, 0));
+            poly.Vertexes.Add(new Vector3(30, 10, 0));
+
+            Block block = new Block("Block");
+            block.Entities.Add(poly);
+
+            Insert ins = new Insert(block);
+
+            DxfDocument doc = new DxfDocument();
+            doc.Entities.Add(ins);
 
             doc.Save("test.dxf");
         }

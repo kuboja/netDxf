@@ -5059,195 +5059,230 @@ namespace netDxf.IO
             // generate polyline3D vertexes
             foreach (Polyline3D poly3D in this.doc.Entities.Polylines3D)
             {
-                List<Vertex> vertexes = new List<Vertex>();
-
-                // first create the polyline vertexes
-                foreach (Vector3 vertex in poly3D.Vertexes)
-                {
-                    Vertex v = new Vertex
-                    {
-                        Position = vertex,
-                        Owner = poly3D,
-                        Flags = poly3D.SmoothType != PolylineSmoothType.NoSmooth ? VertexTypeFlags.SplineFrameControlPoint | VertexTypeFlags.Polyline3DVertex : VertexTypeFlags.Polyline3DVertex,
-                        SubclassMarker = SubclassMarker.Polyline3DVertex
-                    };
-                    this.doc.NumHandles = v.AssignHandle(this.doc.NumHandles);
-                    vertexes.Add(v);
-                }
-
-                // if the polyline is smooth then create the additional vertexes
-                if (poly3D.SmoothType != PolylineSmoothType.NoSmooth)
-                {
-                    short splineSegs = this.doc.DrawingVariables.SplineSegs;
-                    int precision = poly3D.IsClosed ? splineSegs * poly3D.Vertexes.Count : splineSegs * (poly3D.Vertexes.Count - 1);
-                    List<Vector3> points = poly3D.PolygonalVertexes(precision);
-                    foreach (Vector3 p in points)
-                    {
-                        Vertex v = new Vertex
-                        {
-                            Position = p,
-                            Owner = poly3D,
-                            Flags = VertexTypeFlags.SplineVertexFromSplineFitting | VertexTypeFlags.Polyline3DVertex,
-                            SubclassMarker = SubclassMarker.Polyline3DVertex
-                        };
-                        this.doc.NumHandles = v.AssignHandle(this.doc.NumHandles);
-                        vertexes.Add(v);
-                    }
-                }
-
-                EndSequence endSequence = new EndSequence()
-                {
-                    Owner = poly3D
-                };
-                this.doc.NumHandles = endSequence.AssignHandle(this.doc.NumHandles);
-
-                Polyline polyline = new Polyline
-                {
-                    Handle = poly3D.Handle,
-                    SubclassMarker = SubclassMarker.Polyline3D,
-                    Layer = poly3D.Layer,
-                    Normal = poly3D.Normal,
-                    Color = poly3D.Color,
-                    XData = poly3D.XData,
-                    EndSequence = endSequence,
-                    Vertexes = vertexes,
-                    Flags = poly3D.Flags,
-                    SmoothType = poly3D.SmoothType
-                };
-
-                this.polylines.Add(polyline.Handle, polyline);
+                PreprocessPolyline3D(poly3D);
             }
 
             // preprocess smoothed lwPolylines
             // generate polyline2D vertexes
             foreach (Polyline2D poly2D in this.doc.Entities.Polylines2D)
             {
-                // only for smoothed polylines
-                if (poly2D.SmoothType == PolylineSmoothType.NoSmooth)
-                {
-                    continue;
-                }
-
-                // smoothed polyline2D can only have a constant width, the first vertex width will be used.
-                double width = poly2D.Vertexes[0].StartWidth;
-
-                List<Vertex> vertexes = new List<Vertex>();
-
-                // first create the polyline vertexes
-                foreach (Polyline2DVertex vertex in poly2D.Vertexes)
-                {
-                    Vertex v = new Vertex
-                    {
-                        Position = new Vector3(vertex.Position.X, vertex.Position.Y, poly2D.Elevation),
-                        Owner = poly2D,
-                        StartWidth = width,
-                        EndWidth = width,
-                        Flags = VertexTypeFlags.SplineFrameControlPoint,
-                        SubclassMarker = SubclassMarker.Polyline2DVertex
-                    };
-                    this.doc.NumHandles = v.AssignHandle(this.doc.NumHandles);
-                    vertexes.Add(v);
-                }
-
-                // if the polyline is smooth then create the additional vertexes
-                short splineSegs = this.doc.DrawingVariables.SplineSegs;
-                int precision = poly2D.IsClosed ? splineSegs * poly2D.Vertexes.Count : splineSegs * (poly2D.Vertexes.Count - 1);
-                List<Vector2> points = poly2D.PolygonalVertexes(precision);
-                foreach (Vector2 p in points)
-                {
-                    Vertex v = new Vertex
-                    {
-                        Position = new Vector3(p.X, p.Y, poly2D.Elevation),
-                        Owner = poly2D,
-                        StartWidth = width,
-                        EndWidth = width,
-                        Flags = VertexTypeFlags.SplineVertexFromSplineFitting,
-                        SubclassMarker = SubclassMarker.Polyline2DVertex
-                    };
-                    this.doc.NumHandles = v.AssignHandle(this.doc.NumHandles);
-                    vertexes.Add(v);
-                }
-
-                EndSequence endSequence = new EndSequence
-                {
-                    Owner = poly2D
-                };
-                this.doc.NumHandles = endSequence.AssignHandle(this.doc.NumHandles);
-
-                Polyline polyline = new Polyline
-                {
-                    Handle = poly2D.Handle,
-                    SubclassMarker = SubclassMarker.Polyline2D,
-                    Layer = poly2D.Layer,
-                    Elevation = poly2D.Elevation,
-                    Normal = poly2D.Normal,
-                    Color = poly2D.Color,
-                    XData = poly2D.XData,
-                    EndSequence = endSequence,
-                    Vertexes = vertexes,
-                    Flags = poly2D.Flags,
-                    SmoothType = poly2D.SmoothType
-                };
-
-                this.polylines.Add(polyline.Handle, polyline);
+                PreprocessPolyline2D(poly2D);
             }
 
             // generate polyface mesh vertexes
             foreach (PolyfaceMesh pMesh in this.doc.Entities.PolyfaceMeshes)
             {
-                List<Vertex> vertexes = new List<Vertex>();
-
-                // first create the polyface mesh vertexes
-                foreach (Vector3 vertex in pMesh.Vertexes)
-                {
-                    Vertex v = new Vertex
-                    {
-                        Position = vertex,
-                        Owner = pMesh,
-                        Flags = VertexTypeFlags.PolyfaceMeshVertex | VertexTypeFlags.Polygon3DMesh,
-                        SubclassMarker = SubclassMarker.PolyfaceMeshVertex
-                    };
-                    this.doc.NumHandles = v.AssignHandle(this.doc.NumHandles);
-                    vertexes.Add(v);
-                }
-
-                // second create the polyface mesh faces
-                foreach (PolyfaceMeshFace face in pMesh.Faces)
-                {
-                    Vertex v = new Vertex
-                    {
-                        Owner = pMesh,
-                        Layer = face.Layer,
-                        Color = face.Color,
-                        VertexIndexes = face.VertexIndexes,
-                        Flags = VertexTypeFlags.PolyfaceMeshVertex,
-                        SubclassMarker = SubclassMarker.PolyfaceMeshFace
-                    };
-                    this.doc.NumHandles = v.AssignHandle(this.doc.NumHandles);
-                    vertexes.Add(v);
-                }
-
-                EndSequence endSequence = new EndSequence()
-                {
-                    Owner = pMesh
-                };
-                this.doc.NumHandles = endSequence.AssignHandle(this.doc.NumHandles);
-
-                Polyline polyline = new Polyline
-                {
-                    Handle = pMesh.Handle,
-                    SubclassMarker = SubclassMarker.PolyfaceMesh,
-                    Layer = pMesh.Layer,
-                    Normal = pMesh.Normal,
-                    Color = pMesh.Color,
-                    XData = pMesh.XData,
-                    EndSequence = endSequence,
-                    Vertexes = vertexes,
-                    Flags = pMesh.Flags,
-                };
-
-                this.polylines.Add(pMesh.Handle, polyline);
+                PreprocessPolyfaceMesh(pMesh);
             }
+
+            // generate polylines for blocks
+            foreach (Block block in this.doc.Blocks)
+            {
+                foreach (var entity in block.Entities)
+                {
+                    switch (entity)
+                    {
+                        case Polyline2D polyline2D:
+                            PreprocessPolyline2D(polyline2D);
+                            break;
+                        case Polyline3D polyline3D:
+                            PreprocessPolyline3D(polyline3D);
+                            break;
+                        case PolyfaceMesh pMesh:
+                            PreprocessPolyfaceMesh(pMesh);
+                            break;
+                    }
+                } 
+            }
+        }
+
+        private void PreprocessPolyline3D(Polyline3D poly3D)
+        {
+            List<Vertex> vertexes = new List<Vertex>();
+
+            // first create the polyline vertexes
+            foreach (Vector3 vertex in poly3D.Vertexes)
+            {
+                Vertex v = new Vertex
+                {
+                    Position = vertex,
+                    Owner = poly3D,
+                    Flags = poly3D.SmoothType != PolylineSmoothType.NoSmooth ? VertexTypeFlags.SplineFrameControlPoint | VertexTypeFlags.Polyline3DVertex : VertexTypeFlags.Polyline3DVertex,
+                    SubclassMarker = SubclassMarker.Polyline3DVertex
+                };
+                this.doc.NumHandles = v.AssignHandle(this.doc.NumHandles);
+                vertexes.Add(v);
+            }
+
+            // if the polyline is smooth then create the additional vertexes
+            if (poly3D.SmoothType != PolylineSmoothType.NoSmooth)
+            {
+                short splineSegs = this.doc.DrawingVariables.SplineSegs;
+                int precision = poly3D.IsClosed ? splineSegs * poly3D.Vertexes.Count : splineSegs * (poly3D.Vertexes.Count - 1);
+                List<Vector3> points = poly3D.PolygonalVertexes(precision);
+                foreach (Vector3 p in points)
+                {
+                    Vertex v = new Vertex
+                    {
+                        Position = p,
+                        Owner = poly3D,
+                        Flags = VertexTypeFlags.SplineVertexFromSplineFitting | VertexTypeFlags.Polyline3DVertex,
+                        SubclassMarker = SubclassMarker.Polyline3DVertex
+                    };
+                    this.doc.NumHandles = v.AssignHandle(this.doc.NumHandles);
+                    vertexes.Add(v);
+                }
+            }
+
+            EndSequence endSequence = new EndSequence()
+            {
+                Owner = poly3D
+            };
+            this.doc.NumHandles = endSequence.AssignHandle(this.doc.NumHandles);
+
+            Polyline polyline = new Polyline
+            {
+                Handle = poly3D.Handle,
+                SubclassMarker = SubclassMarker.Polyline3D,
+                Layer = poly3D.Layer,
+                Normal = poly3D.Normal,
+                Color = poly3D.Color,
+                XData = poly3D.XData,
+                EndSequence = endSequence,
+                Vertexes = vertexes,
+                Flags = poly3D.Flags,
+                SmoothType = poly3D.SmoothType
+            };
+
+            this.polylines.Add(polyline.Handle, polyline);
+        }
+
+        private void PreprocessPolyline2D(Polyline2D poly2D)
+        {
+            // only for smoothed polylines
+            if (poly2D.SmoothType == PolylineSmoothType.NoSmooth)
+            {
+                return;
+            }
+
+            // smoothed polyline2D can only have a constant width, the first vertex width will be used.
+            double width = poly2D.Vertexes[0].StartWidth;
+
+            List<Vertex> vertexes = new List<Vertex>();
+
+            // first create the polyline vertexes
+            foreach (Polyline2DVertex vertex in poly2D.Vertexes)
+            {
+                Vertex v = new Vertex
+                {
+                    Position = new Vector3(vertex.Position.X, vertex.Position.Y, poly2D.Elevation),
+                    Owner = poly2D,
+                    StartWidth = width,
+                    EndWidth = width,
+                    Flags = VertexTypeFlags.SplineFrameControlPoint,
+                    SubclassMarker = SubclassMarker.Polyline2DVertex
+                };
+                this.doc.NumHandles = v.AssignHandle(this.doc.NumHandles);
+                vertexes.Add(v);
+            }
+
+            // if the polyline is smooth then create the additional vertexes
+            short splineSegs = this.doc.DrawingVariables.SplineSegs;
+            int precision = poly2D.IsClosed ? splineSegs * poly2D.Vertexes.Count : splineSegs * (poly2D.Vertexes.Count - 1);
+            List<Vector2> points = poly2D.PolygonalVertexes(precision);
+            foreach (Vector2 p in points)
+            {
+                Vertex v = new Vertex
+                {
+                    Position = new Vector3(p.X, p.Y, poly2D.Elevation),
+                    Owner = poly2D,
+                    StartWidth = width,
+                    EndWidth = width,
+                    Flags = VertexTypeFlags.SplineVertexFromSplineFitting,
+                    SubclassMarker = SubclassMarker.Polyline2DVertex
+                };
+                this.doc.NumHandles = v.AssignHandle(this.doc.NumHandles);
+                vertexes.Add(v);
+            }
+
+            EndSequence endSequence = new EndSequence
+            {
+                Owner = poly2D
+            };
+            this.doc.NumHandles = endSequence.AssignHandle(this.doc.NumHandles);
+
+            Polyline polyline = new Polyline
+            {
+                Handle = poly2D.Handle,
+                SubclassMarker = SubclassMarker.Polyline2D,
+                Layer = poly2D.Layer,
+                Elevation = poly2D.Elevation,
+                Normal = poly2D.Normal,
+                Color = poly2D.Color,
+                XData = poly2D.XData,
+                EndSequence = endSequence,
+                Vertexes = vertexes,
+                Flags = poly2D.Flags,
+                SmoothType = poly2D.SmoothType
+            };
+
+            this.polylines.Add(polyline.Handle, polyline);
+        }
+
+        private void PreprocessPolyfaceMesh(PolyfaceMesh pMesh)
+        {
+            List<Vertex> vertexes = new List<Vertex>();
+
+            // first create the polyface mesh vertexes
+            foreach (Vector3 vertex in pMesh.Vertexes)
+            {
+                Vertex v = new Vertex
+                {
+                    Position = vertex,
+                    Owner = pMesh,
+                    Flags = VertexTypeFlags.PolyfaceMeshVertex | VertexTypeFlags.Polygon3DMesh,
+                    SubclassMarker = SubclassMarker.PolyfaceMeshVertex
+                };
+                this.doc.NumHandles = v.AssignHandle(this.doc.NumHandles);
+                vertexes.Add(v);
+            }
+
+            // second create the polyface mesh faces
+            foreach (PolyfaceMeshFace face in pMesh.Faces)
+            {
+                Vertex v = new Vertex
+                {
+                    Owner = pMesh,
+                    Layer = face.Layer,
+                    Color = face.Color,
+                    VertexIndexes = face.VertexIndexes,
+                    Flags = VertexTypeFlags.PolyfaceMeshVertex,
+                    SubclassMarker = SubclassMarker.PolyfaceMeshFace
+                };
+                this.doc.NumHandles = v.AssignHandle(this.doc.NumHandles);
+                vertexes.Add(v);
+            }
+
+            EndSequence endSequence = new EndSequence()
+            {
+                Owner = pMesh
+            };
+            this.doc.NumHandles = endSequence.AssignHandle(this.doc.NumHandles);
+
+            Polyline polyline = new Polyline
+            {
+                Handle = pMesh.Handle,
+                SubclassMarker = SubclassMarker.PolyfaceMesh,
+                Layer = pMesh.Layer,
+                Normal = pMesh.Normal,
+                Color = pMesh.Color,
+                XData = pMesh.XData,
+                EndSequence = endSequence,
+                Vertexes = vertexes,
+                Flags = pMesh.Flags,
+            };
+
+            this.polylines.Add(pMesh.Handle, polyline);
         }
 
         private static short GetSuppressZeroesValue(bool leading, bool trailing, bool feet, bool inches)
