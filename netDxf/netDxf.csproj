@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>net45;netstandard2.1;netcoreapp3.1;net6.0</TargetFrameworks>
-    <Version>3.0.0.1</Version>
+    <Version>3.0.0.3</Version>
     <Authors>Daniel Carvajal</Authors>
     <Owners>haplokuon</Owners>
     <Company>netDxf</Company>
